@@ -1,0 +1,50 @@
+openapi: 3.0.4
+info: 
+  title: SIGMA API
+  description: Descripción de endpoints y params de sigma-backend.
+  version: 1.0.0
+
+servers:
+  - url: https://sigma-backend-0ekn.onrender.com/api/
+
+tags:
+  - name: auth
+    description: Maneja la ruta para realizar el inicio de sesión. Método POST.
+
+paths:
+  /auth/login:
+    post:
+      tags: 
+        - auth
+      summary: Realiza chequeos de inicio de sesión.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bodyAuth'
+      responses:
+        '200': 
+          $ref: '#/components/responses/success'
+        '403':
+          $ref: '#/components/responses/badCredentials'
+
+components:
+  responses:
+    success:
+      description: (✓) Realizado con éxito !
+    badCredentials:
+      description: (X) Credenciales incorrectas.
+
+  parameters: {}  # Vacío pero declarado correctamente
+
+  schemas:
+    bodyAuth:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Nombre de usuario.
+        password:
+          type: string
+          description: Contraseña del usuario.
