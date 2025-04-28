@@ -1,20 +1,20 @@
 openapi: 3.0.4
-info: 
+info:
   title: SIGMA API
   description: Descripción de endpoints y params de sigma-backend.
   version: 1.0.0
-
 servers:
   - url: https://sigma-backend-0ekn.onrender.com/api/
-
 tags:
   - name: auth
     description: Maneja la ruta para realizar el inicio de sesión. Método POST.
-
+  - name: income
+    description: Maneja las rutas que se encargan del apartado de ingresos. 
+      Métodos GET, POST, PUT, DELETE.
 paths:
   /auth/login:
     post:
-      tags: 
+      tags:
         - auth
       summary: Realiza chequeos de inicio de sesión.
       requestBody:
@@ -24,20 +24,186 @@ paths:
             schema:
               $ref: '#/components/schemas/bodyAuth'
       responses:
-        '200': 
+        '200':
           $ref: '#/components/responses/success'
         '403':
           $ref: '#/components/responses/badCredentials'
+          
+  /income:
+    get:
+      tags:
+        - income
+      summary: Obtiene ingresos agrupados filtrados por fecha, dependencia y aula (view).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/idDependency'
+        - $ref: '#/components/parameters/idClassroom'
+      responses:
+        '200':
+          $ref: '#/components/responses/success'
+        '400':
+          $ref: '#/components/responses/invalidParams'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+  
+  /income/register:
+    get:
+      tags:
+        - income
+      summary: Obtiene registros individuales de ingresos en un rango de fechas (register).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+      responses:
+        '200':
+          $ref: '#/components/responses/success'
+        '400':
+          $ref: '#/components/responses/invalidParams'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+          
+  /income/register/form:
+    get:
+      tags:
+        - income
+      summary: Obtiene datos del formulario de registro de ingresos (form).
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          $ref: '#/components/responses/success'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+          
+    post:
+      tags:
+        - income
+      summary: Registro de formulario de ingresos.
+      description: Requiere envío de un body en formato JSON.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/incomeRegisterForm'
+      responses:
+        '200':
+          $ref: '#/components/responses/success'
+        '400':
+          $ref: '#/components/responses/invalidParams'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+  
+  /income/register/{id}:
+    delete:
+      tags:
+        - income
+      summary: Elimina un registro de ingresos por ID.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID del ingreso a eliminar.
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: '#/components/responses/success'
+        '400':
+          $ref: '#/components/responses/invalidParams'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
+  /income/register/form/{id}:
+    put:
+      tags:
+        - income
+      summary: Actualiza un registro de ingresos por ID.
+      description: El body debe contener los datos nuevos (`newRecords`) y los datos anteriores (`oldRecords`).
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID del registro de ingreso a actualizar.
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/updateIncomeRecord'
+      responses:
+        '200':
+          $ref: '#/components/responses/success'
+        '400':
+          $ref: '#/components/responses/invalidParams'
+        '401':
+          $ref: '#/components/responses/unauthorized'
+        '404':
+          $ref: '#/components/responses/notFound'
 
+          
 components:
   responses:
     success:
       description: (✓) Realizado con éxito !
     badCredentials:
       description: (X) Credenciales incorrectas.
-
-  parameters: {}  # Vacío pero declarado correctamente
-
+    badToken:
+      description: (X) Token incorrecto.
+    invalidParams:
+      description: (X) Parámetros inválidos.
+    unauthorized:
+      description: (X) Token inválido o ausente. Acceso no autorizado.
+    notFound:
+      description: (X) Registro no encontrado en la base de datos.
+      
+  parameters:
+    startDate:
+      name: start_date
+      in: query
+      description: Fecha de inicio en formato YYYY-MM-DD.
+      required: false
+      schema:
+        type: string
+        format: date
+    endDate:
+      name: end_date
+      in: query
+      description: Fecha de fin en formato YYYY-MM-DD.
+      required: false
+      schema:
+        type: string
+        format: date
+    idDependency:
+      name: id_dependency
+      in: query
+      description: ID de la dependencia filtrada.
+      required: false
+      schema:
+        type: integer
+        example: 1
+    idClassroom:
+      name: id_classroom
+      in: query
+      description: ID del aula filtrada.
+      required: false
+      schema:
+        type: integer
+        
   schemas:
     bodyAuth:
       type: object
@@ -48,3 +214,222 @@ components:
         password:
           type: string
           description: Contraseña del usuario.
+          
+    incomeRegisterForm:
+      type: object
+      required:
+        - id_classroom
+        - id_dependency
+        - date
+        - amount
+        - dni
+        - name
+        - last_name
+        - email
+        - id_category
+        - id_rank
+        - status
+        - code
+        - begin_date
+        - end_date
+        - id_grade_type
+        - id_pupil
+        - id_destination
+      properties:
+        id_classroom:
+          type: integer
+          description: ID del aula (vacío si no existe).
+          example: 1
+        id_dependency:
+          type: integer
+          description: ID de la dependencia.
+          example: 1
+        date:
+          type: string
+          format: date
+          description: Fecha en que se hizo el ingreso.
+          example: 2025-03-01
+        amount:
+          type: number
+          format: float
+          description: Monto del ingreso.
+          example: 10000
+        dni:
+          type: integer
+          description: Documento nacional de identidad.
+          example: 44760436
+        name:
+          type: string
+          description: Nombre de la persona.
+          example: Me
+        last_name:
+          type: string
+          description: Apellido de la persona.
+          example: Benitez
+        email:
+          type: string
+          format: email
+          description: Correo electrónico.
+          example: juanbenitez@gmail.com
+        id_category:
+          type: integer
+          description: ID de la categoría (civil, militar, etc).
+          example: 1
+        id_rank:
+          type: integer
+          description: ID del rango (cabo, teniente, etc).
+          example: 0
+        status:
+          type: integer
+          description: Estado del ingreso (0 -> chequea repetición del dato. / 1 -> Ingresa indiferentemente).
+          example: 0
+        code:
+          type: string
+          description: Código del aula a ingresar.
+          example: EN001
+        begin_date:
+          type: string
+          format: date
+          description: Fecha de inicio del aula.
+          example: 2024-05-01
+        end_date:
+          type: string
+          format: date
+          description: Fecha de fin del aula.
+          example: 2025-05-01
+        id_grade_type:
+          type: integer
+          description: ID del curso del aula.
+          example: 3
+        id_pupil:
+          type: integer
+          description: ID del alumno (vacío si no existe).
+          example: 1
+        id_destination:
+          type: integer
+          description: ID del destino.
+          example: 0
+          
+    updateIncomeRecord:
+      type: object
+      required:
+        - newRecords
+        - oldRecords
+      properties:
+        newRecords:
+          type: object
+          description: Nuevos datos del registro.
+          required:
+            - amount
+            - dni
+            - name
+            - last_name
+            - email
+            - id_classroom
+            - date
+            - id_category
+            - id_rank
+            - id_destination
+            - id_grade_type
+            - code
+          properties:
+            amount:
+              type: string
+              description: Monto actualizado.
+            dni:
+              type: string
+              description: DNI actualizado.
+            name:
+              type: string
+              description: Nombre actualizado.
+            last_name:
+              type: string
+              description: Apellido actualizado.
+            email:
+              type: string
+              format: email
+              description: Correo electrónico actualizado.
+            id_classroom:
+              type: string
+              description: ID del aula actualizado.
+            date:
+              type: string
+              format: date
+              description: Fecha de ingreso actualizada.
+            id_category:
+              type: string
+              description: ID de la categoría actualizada.
+            id_rank:
+              type: string
+              description: ID del rango actualizado.
+            id_destination:
+              type: string
+              description: ID del destino actualizado.
+            id_grade_type:
+              type: string
+              description: ID del curso actualizado.
+            code:
+              type: string
+              description: Código actualizado.
+    
+        oldRecords:
+          type: object
+          description: Datos anteriores del registro antes de la actualización.
+          required:
+            - amount
+            - dni
+            - name
+            - last_name
+            - email
+            - id_classroom
+            - date
+            - id_category
+            - id_rank
+            - id_destination
+            - id_grade_type
+            - code
+          properties:
+            amount:
+              type: string
+              description: Monto previo.
+            dni:
+              type: string
+              description: DNI previo.
+            name:
+              type: string
+              description: Nombre previo.
+            last_name:
+              type: string
+              description: Apellido previo.
+            email:
+              type: string
+              format: email
+              description: Correo electrónico previo.
+            id_classroom:
+              type: string
+              description: ID del aula previo.
+            date:
+              type: string
+              format: date
+              description: Fecha de ingreso previa.
+            id_category:
+              type: string
+              description: ID de la categoría previa.
+            id_rank:
+              type: string
+              description: ID del rango previo.
+            id_destination:
+              type: string
+              description: ID del destino previo.
+            id_grade_type:
+              type: string
+              description: ID del curso previo.
+            code:
+              type: string
+              description: Código previo.
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
